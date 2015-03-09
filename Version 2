@@ -1,14 +1,17 @@
-install.packages(c("RCurl", "RJSONIO", "ggplot2","lubridate","plyr","reshape","quantmod"))
+setwd ("h:/settings/desktop/BDA/Project")
+install.packages(c("RCurl", "RJSONIO", "ggplot2","lubridate","plyr","reshape","quantmod","Rcpp","scales"))
 library(RCurl)
 library(RJSONIO) 
 library(ggplot2) 
 library(lubridate)
 library(reshape)
 library(plyr)
-library(quantmod) 
+library(quantmod)
+library(Rcpp)
+library(scales)
 googleData <- read.csv("report.csv", skip=4, nrow=588-5)
-googleData$Date <- as.Date(substring(googleData$Week, first=1, last=10))
-googleData$Date <- format(googleData$Date, "%Y-%m")
+googleData$Date <- substring(googleData$Week, first=1, last=7)
+#googleData$Date <- format(googleData$Date, "%Y-%m")
 googleDataMonthly <- aggregate(cbind(chase, bank.of.america,wells.fargo)~ Date, data=googleData, FUN=mean)
 googleDataMonthly$logChase <- as.numeric(Delt(googleDataMonthly$chase, type = c("log")))
 googleDataMonthly$logBoA <- as.numeric(Delt(googleDataMonthly$bank.of.america, type = c("log")))
@@ -20,6 +23,33 @@ consumercredit$LogDiffCredit <- as.numeric(Delt(consumercredit$ConsumerCredit, t
 finalData <- merge(googleDataMonthly,consumercredit,by="Date")
 finalDataTotal <- subset(finalData, select = c(Date,chase,bank.of.america,wells.fargo))
 finalDataLog <- subset(finalData, select = c(Date,logChase,logBoA,logWF,LogDiffCredit))
+shapiro.test(finalData$LogDiffCredit)
+cor.test(finalData$logChase,finalData$LogDiffCredit,method="kendall")
+cor.test(finalData$logBoA,finalData$LogDiffCredit,method="kendall")
+cor.test(finalData$logWF,finalData$LogDiffCredit,method="kendall")
 finalDataTotalMelt <- melt(finalDataTotal)
 finalDataLogMelt <- melt(finalDataLog)
-ggplot(data=finalDataTotalMelt,aes(x=Date, y=value, colour=variable)) +geom_line()
+finalDataTotalMelt$Date <- as.Date(paste0(finalDataTotalMelt$Date,"-01"))
+finalDataLogMelt$Date <- as.Date(paste0(finalDataLogMelt$Date,"-01"))
+ggplot(finalDataTotalMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()
+ggplot(finalDataLogMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()
+
+
+
++ facet_wrap(~ variable, ncol = 1, scales = "free_y") 
++ scale_colour_discrete(guide="none")
+ggplot(finalDataLogMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()
++ scale_x_date(labels = date_format("%Y-%m"))
++ facet_wrap(~ variable, ncol = 1, scales = "free_y") 
++ scale_colour_discrete(guide="none")
+
+
+#  finalData %>% ggvis(~Date, ~logChase, stroke :="red") %>% layer_paths() %>%
+ # layer_paths(data = finalData, x = ~Date, y = ~LogDiffCredit, stroke := "green")
+  
+#finalData %>% ggvis(~Date, ~logBoA, stroke :="red") %>% layer_paths() %>%
+ # layer_paths(data = finalData, x = ~Date, y = ~LogDiffCredit, stroke := "green")
+
+#finalData %>% ggvis(~Date, ~logWF, stroke :="red") %>% layer_paths() %>%
+ # layer_paths(data = finalData, x = ~Date, y = ~LogDiffCredit, stroke := "green")
+#finalDataTotalMelt$Date<-as.Date(paste(finalDataTotalMelt$Date,1),"%Y-%U %m")
