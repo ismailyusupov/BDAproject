@@ -32,24 +32,3 @@ finalDataLogMelt <- melt(finalDataLog)
 finalDataTotalMelt$Date <- as.Date(paste0(finalDataTotalMelt$Date,"-01"))
 finalDataLogMelt$Date <- as.Date(paste0(finalDataLogMelt$Date,"-01"))
 ggplot(finalDataTotalMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()
-ggplot(finalDataLogMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()
-
-
-
-+ facet_wrap(~ variable, ncol = 1, scales = "free_y") 
-+ scale_colour_discrete(guide="none")
-ggplot(finalDataLogMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()
-+ scale_x_date(labels = date_format("%Y-%m"))
-+ facet_wrap(~ variable, ncol = 1, scales = "free_y") 
-+ scale_colour_discrete(guide="none")
-
-
-#  finalData %>% ggvis(~Date, ~logChase, stroke :="red") %>% layer_paths() %>%
- # layer_paths(data = finalData, x = ~Date, y = ~LogDiffCredit, stroke := "green")
-  
-#finalData %>% ggvis(~Date, ~logBoA, stroke :="red") %>% layer_paths() %>%
- # layer_paths(data = finalData, x = ~Date, y = ~LogDiffCredit, stroke := "green")
-
-#finalData %>% ggvis(~Date, ~logWF, stroke :="red") %>% layer_paths() %>%
- # layer_paths(data = finalData, x = ~Date, y = ~LogDiffCredit, stroke := "green")
-#finalDataTotalMelt$Date<-as.Date(paste(finalDataTotalMelt$Date,1),"%Y-%U %m")
