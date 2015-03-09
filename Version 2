@@ -31,4 +31,8 @@ finalDataTotalMelt <- melt(finalDataTotal)
 finalDataLogMelt <- melt(finalDataLog)
 finalDataTotalMelt$Date <- as.Date(paste0(finalDataTotalMelt$Date,"-01"))
 finalDataLogMelt$Date <- as.Date(paste0(finalDataLogMelt$Date,"-01"))
+finalDataLog$Date <- as.Date(paste0(finalDataLog$Date,"-01"))
 ggplot(finalDataTotalMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()
+ggplot() + geom_line(finalDataLogMelt, aes(Date, value, group=variable, colour = variable))+ 
+  facet_wrap(~ variable, ncol = 1, scales = "free_y",) +
+  geom_line(data=finalDataLog,aes(x=Date, y=LogDiffCredit),colour="black")
