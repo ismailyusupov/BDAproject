@@ -19,6 +19,11 @@ googleData <- read.csv("report.csv", skip=4, nrow=588-5)
 # Transforms weekly data from Google into monthly data
 googleData$Date <- substring(googleData$Week, first=1, last=7)
 googleDataMonthly <- aggregate(cbind(chase, bank.of.america,wells.fargo)~ Date, data=googleData, FUN=mean)
+# Augmented Dickey-Fuller Tests for stationarity
+adf.test(googleDataMonthly$chase,alternative="stationary") # p-value = 0.99 (non-stationary)
+adf.test(googleDataMonthly$bank.of.america,alternative="stationary") # p-value = 0.99 (non-stationary)
+adf.test(googleDataMonthly$wells.fargo,alternative="stationary") # p-value = 0.7522 (non-stationary)
+adf.test(consumercredit$ConsumerCredit,alternative="stationary") # p-value = 0.9605 (non-stationary)
 # Creates columns with log differences of all variables
 googleDataMonthly$logChase <- as.numeric(Delt(googleDataMonthly$chase, type = c("log")))
 googleDataMonthly$logBoA <- as.numeric(Delt(googleDataMonthly$bank.of.america, type = c("log")))
@@ -30,21 +35,30 @@ finalData <- merge(googleDataMonthly,consumercredit,by="Date")
 finalData$consumer.credit <- (finalData$ConsumerCredit*100/max(finalData$ConsumerCredit))
 finalDataTotal <- subset(finalData, select = c(Date,chase,bank.of.america,wells.fargo,consumer.credit))
 finalDataLog <- subset(finalData, select = c(Date,logChase,logBoA,logWF,LogDiffCredit))
-shapiro.test(finalData$LogDiffCredit)
-cor.test(finalData$logChase,finalData$LogDiffCredit,method="kendall")
-cor.test(finalData$logBoA,finalData$LogDiffCredit,method="kendall")
-cor.test(finalData$logWF,finalData$LogDiffCredit,method="kendall")
+shapiro.test(finalData$LogDiffCredit) # W = 0.8521, p-value = 3.591e-10
+cor.test(finalData$logChase,finalData$LogDiffCredit,method="kendall") # p-value = 0.7013 tau -0.02256292 (correlation is not statisically significant)
+cor.test(finalData$logBoA,finalData$LogDiffCredit,method="kendall") # p-value = 0.05437 tau 0.113129 the (correlation is statisically significant)
+cor.test(finalData$logWF,finalData$LogDiffCredit,method="kendall") # p-value = 0.1401 tau 0.08681563 the (correlation is not statisically significant)
 finalDataTotalMelt <- melt(finalDataTotal)
 finalDataLogMelt <- melt(finalDataLog,id=c("LogDiffCredit","Date"))
 finalDataTotalMelt$Date <- as.Date(paste0(finalDataTotalMelt$Date,"-01"))
 finalDataLogMelt$Date <- as.Date(paste0(finalDataLogMelt$Date,"-01"))
 finalDataLog$Date <- as.Date(paste0(finalDataLog$Date,"-01"))
+
+#Regression analysis
+regression <-lm(finalDataLog$LogDiffCredit ~ finalDataLog$logChase + finalDataLog$logBoA + finalDataLog$logWF)
+# F-statistic: 2.131 on 3 and 128 DF,  p-value: 0.09956
+
+# Visualisation
 # Graph 1
 ggplot(finalDataTotalMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()+
+  xlab("Time (months)")+
   ylab("Normalized values")+
   scale_color_discrete(name='Legend', guide='legend')+
-  theme(axis.title.x = element_text(size = 16)) +
+  theme(axis.title.x = element_text(size = 16))+
   theme(axis.title.y = element_text(size = 16))+
+  theme(axis.text.x = element_text(size = 14))+
+  theme(axis.text.y = element_text(size = 14))+
   theme(legend.text=element_text(size=15))+
   theme(legend.title = element_text(colour="black", size=15))
 # Graph 2
@@ -53,18 +67,12 @@ plt <-ggplot(finalDataLogMelt) + geom_line(aes(Date, value, color = variable))+
   scale_color_discrete(name='one', guide='legend')
 plt <- plt +  geom_line(data=finalDataLogMelt,aes(x=Date, y=LogDiffCredit,color="logConsumerCredit"))+
   scale_color_discrete(name='Legend', guide='legend')+
+  xlab("Time (months)")+
   ylab("Log difference")+
   theme(axis.title.x = element_text(size = 16)) +
   theme(axis.title.y = element_text(size = 16))+
+  theme(axis.text.x = element_text(size = 14))+
+  theme(axis.text.y = element_text(size = 14))+
   theme(legend.title = element_text(colour="black", size=15))+
   theme(legend.text=element_text(size=15))
 print(plt)
-
-adf.test(googleDataMonthly$chase,alternative="stationary")
-adf.test(googleDataMonthly$bank.of.america,alternative="stationary")
-adf.test(googleDataMonthly$wells.fargo,alternative="stationary")
-adf.test(consumercredit$ConsumerCredit,alternative="stationary")
-
-
-
-regression <-lm(finalDataLog$LogDiffCredit ~ finalDataLog$logChase + finalDataLog$logBoA + finalDataLog$logWF)
