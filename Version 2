@@ -10,17 +10,23 @@ library(quantmod)
 library(Rcpp)
 library(scales)
 library(tseries)
-googleData <- read.csv("report.csv", skip=4, nrow=588-5)
-googleData$Date <- substring(googleData$Week, first=1, last=7)
-googleDataMonthly <- aggregate(cbind(chase, bank.of.america,wells.fargo)~ Date, data=googleData, FUN=mean)
-googleDataMonthly$logChase <- as.numeric(Delt(googleDataMonthly$chase, type = c("log")))
-googleDataMonthly$logBoA <- as.numeric(Delt(googleDataMonthly$bank.of.america, type = c("log")))
-googleDataMonthly$logWF <- as.numeric(Delt(googleDataMonthly$wells.fargo, type = c("log")))
+# Uploads the data on US consumer credit outstanding for the period from January 2004 to February 2015 from Federal Reserve's web-site
 fname <- "http://www.federalreserve.gov/datadownload/Output.aspx?rel=G19&series=eaa77ea35198c07e837dbe6306fc1be6&lastObs=&from=01/01/2004&to=01/31/2015&filetype=csv&label=include&layout=seriescolumn"
 consumercredit <- read.table(fname, header=TRUE, sep=",", skip=5)
 consumercredit <- rename(consumercredit, c("Time.Period"="Date", "DTCTL_N.M"="ConsumerCredit"))
+# Reads .csv file with weekly data on Google searches for "Chase", "Bank of America" and "Wells Fargo" from January 2004 to February 2015
+googleData <- read.csv("report.csv", skip=4, nrow=588-5)
+# Transforms weekly data from Google into monthly data
+googleData$Date <- substring(googleData$Week, first=1, last=7)
+googleDataMonthly <- aggregate(cbind(chase, bank.of.america,wells.fargo)~ Date, data=googleData, FUN=mean)
+# Creates columns with log differences of all variables
+googleDataMonthly$logChase <- as.numeric(Delt(googleDataMonthly$chase, type = c("log")))
+googleDataMonthly$logBoA <- as.numeric(Delt(googleDataMonthly$bank.of.america, type = c("log")))
+googleDataMonthly$logWF <- as.numeric(Delt(googleDataMonthly$wells.fargo, type = c("log")))
 consumercredit$LogDiffCredit <- as.numeric(Delt(consumercredit$ConsumerCredit, type = c("log")))
+# Merges Google data ad Cosumer credit data into one dataframe
 finalData <- merge(googleDataMonthly,consumercredit,by="Date")
+# Creates a column with normalized Consumer credit data for futher use in visualization (each value is divided by the maximum value in the column)
 finalData$consumer.credit <- (finalData$ConsumerCredit*100/max(finalData$ConsumerCredit))
 finalDataTotal <- subset(finalData, select = c(Date,chase,bank.of.america,wells.fargo,consumer.credit))
 finalDataLog <- subset(finalData, select = c(Date,logChase,logBoA,logWF,LogDiffCredit))
@@ -35,10 +41,10 @@ finalDataLogMelt$Date <- as.Date(paste0(finalDataLogMelt$Date,"-01"))
 finalDataLog$Date <- as.Date(paste0(finalDataLog$Date,"-01"))
 # Graph 1
 ggplot(finalDataTotalMelt, aes(Date, value, group=variable, colour = variable)) + geom_line()+
-  ylab("")+
+  ylab("Normalized values")+
   scale_color_discrete(name='Legend', guide='legend')+
   theme(axis.title.x = element_text(size = 16)) +
-  theme(axis.title.y = element_blank())+
+  theme(axis.title.y = element_text(size = 16))+
   theme(legend.text=element_text(size=15))+
   theme(legend.title = element_text(colour="black", size=15))
 # Graph 2
